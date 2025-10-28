@@ -4,8 +4,6 @@ import asyncio
 import serial_asyncio
 from pydantic import BaseModel
 
-# sys.path.insert(0, os.path.dirname(__file__))
-# from Message import Measurement, PulCom360
 
 class Measurement(BaseModel):
     x: str  
@@ -20,6 +18,7 @@ class Serial360(asyncio.Protocol):
     def __init__(self, callback= None):
         self.timeout_handle = None
         self.buffer = []
+        self.message: PulCom360 = None
         self.callback = callback
         
     def data_received(self, data):
@@ -39,10 +38,10 @@ class Serial360(asyncio.Protocol):
         data.pop()
         
         try:
-            if self.callback:
-                # message = self.parse_data_cyb360(data)  
-                # self.callback(message)
-                self.callback(data)
+            if self.callback:                
+                # Handle parsed data
+                message = self.parse_data_cyb360(data)  
+                self.callback(message)
         except Exception as e:
             print(f"Error in callback: {e}")
         finally:
@@ -76,9 +75,10 @@ class Serial360(asyncio.Protocol):
         except Exception as e:
             raise Exception("Error processing measurement_cyb360") from e
         finally:
-            return PulCom360(
+            self.message = PulCom360(
                 measurement= measurement, 
                 grade= grade)
+            return self.message
 
 def handle_serial_data(data):
     print(f"Processed Data: {data}")
